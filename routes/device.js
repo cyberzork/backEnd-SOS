@@ -1,42 +1,43 @@
 var express = require('express');
-var bcrypt = require('bcryptjs');
-var jwt = require('jsonwebtoken');
 
 var Auth = require('../middlewares/auth');
 
 var app = express();
 
 
-var Usuario = require('../models/usuario');
+var Device = require('../models/device');
 
 
 // ==================================================
-// Listar Usuarios
-// ===================================================
+// Listar Dispositivos
+// ==================================================
 app.get('/', (req, res, next) => {
 
     var desde = req.query.desde || 0;
     desde = Number(desde);
 
-    Usuario.find({}, 'nombre email img role')
+    Device.find({})
         .skip(desde)
         .limit(10)
+        .populate('usuario', 'nombre email')
+        .populate('corp')
         .exec(
 
-            (err, usuarios) => {
+            (err, devices) => {
                 if (err) {
                     return res.status(500).json({
                         ok: false,
-                        mensaje: 'Error cargando usuarios',
+                        mensaje: 'Error cargando Dispositivos',
                         errors: err
                     });
                 } else {
-                    Usuario.count({}, (err, conteo) => {
+                    Device.count({}, (err, conteo) => {
                         res.status(200).json({
                             ok: true,
-                            usuarios: usuarios,
+                            devices: devices,
                             total: conteo
                         });
+
                     });
                 }
             });
@@ -45,51 +46,50 @@ app.get('/', (req, res, next) => {
 
 
 // ==================================================
-// Actualizar usuarios
+// Actualizar Dispositivos
 // ===================================================
-app.put('/:id', (req, res) => {
+app.put('/:id', Auth.verificaToken, (req, res) => {
 
     var id = req.params.id;
     var body = req.body;
 
-    Usuario.findById(id, (err, usuario) => {
+    Device.findById(id, (err, device) => {
 
 
         if (err) {
             return res.status(500).json({
                 ok: false,
-                mensaje: 'usuario no encontrado',
+                mensaje: 'Dispositivo no encontrado',
                 errors: err
             });
         }
 
-        if (!usuario) {
+        if (!device) {
             return res.status(400).json({
                 ok: false,
-                mensaje: 'El usuario con id' + id + 'no existe',
-                errors: { message: 'No existe un usuario con ese id' }
+                mensaje: 'El dispositivo con id: ' + id + 'no existe',
+                errors: { message: 'No existe un dispositivo con ese id' }
             });
 
         }
 
-        usuario.nombre = body.nombre;
-        usuario.email = body.email;
-        usuario.role = body.role;
+        device.tipo = body.tipo;
+        device.nombre = body.nombre;
+        device.corp = body.corp;
 
 
-        usuario.save((err, usuarioGuardado) => {
+        device.save((err, deviceGuardado) => {
             if (err) {
                 return res.status(400).json({
                     ok: false,
-                    mensaje: 'Error al actualizar al usuario',
+                    mensaje: 'Error al actualizar el dispositivo',
                     errors: err
                 });
             }
 
-            usuarioGuardado.password = '';
             res.status(200).json({
                 ok: true,
-                usuario: usuarioGuardado
+                device: deviceGuardado
             });
 
         });
@@ -99,64 +99,64 @@ app.put('/:id', (req, res) => {
 });
 
 // ==================================================
-// Crear usuarios
+// Alta un Dispositivo
 // ===================================================
 app.post('/', Auth.verificaToken, (req, res) => {
     var body = req.body;
 
-    var usuario = new Usuario({
-        nombre: body.nombre,
-        email: body.email,
-        password: bcrypt.hashSync(body.password, 10),
-        img: body.img,
-        role: body.role
+    var device = new Device({
 
+        imei: body.imei,
+        tipo: body.tipo,
+        nombre: body.nombre,
+        usuario: req.usuario._id,
+        corp: body.corp
     });
 
-    usuario.save((err, usuarioGuardado) => {
+    device.save((err, deviceGuardado) => {
         if (err) {
             return res.status(400).json({
                 ok: false,
-                mensaje: 'Error al crear el usuario',
+                mensaje: 'Error al crear el Dispositivo',
                 errors: err
             });
         }
         res.status(200).json({
             ok: true,
-            usuario: usuarioGuardado,
-            usuariotken: req.usuario
+            device: deviceGuardado,
+
         });
 
     });
 });
 
 // ==================================================
-// Borrar usuario by ID
+// Borrar dispositivo by ID
 // ===================================================
-app.delete('/:id', (req, res) => {
+app.delete('/:id', Auth.verificaToken, (req, res) => {
 
     var id = req.params.id;
     var body = req.body;
 
-    Usuario.findByIdAndRemove(id, (err, usuarioBorrado) => {
+    Device.findByIdAndRemove(id, (err, deviceBorrado) => {
 
         if (err) {
             return res.status(500).json({
                 ok: false,
-                mensaje: 'Usuario Borrado correctamente',
+                mensaje: 'Device Borrado correctamente',
                 errors: err
             });
         }
-        if (!usuarioBorrado) {
+        if (!deviceBorrado) {
             return res.status(400).json({
                 ok: false,
-                mensaje: 'El usuario no existe',
+                mensaje: 'El dispositivo no existe',
                 errors: { message: 'Verifique su id' }
             });
         }
         res.status(200).json({
             ok: true,
-            usuario: usuarioBorrado
+            device: deviceBorrado
         });
 
     });

@@ -17,6 +17,11 @@ app.use(bodyParser.json());
 var appRoutes = require('./routes/app');
 var usuarioRoutes = require('./routes/usuario');
 var loginRoutes = require('./routes/login');
+var corpRoutes = require('./routes/corp');
+var deviceRoutes = require('./routes/device');
+var searchRoutes = require('./routes/search');
+var uploadRoutes = require('./routes/upload');
+var imgRoutes = require('./routes/img');
 
 // conexión a la BD
 
@@ -25,10 +30,20 @@ mongoose.connection.openUri('mongodb://127.0.0.1:27017/sosDB', (err, res) => {
     console.log('Base de datos: \x1b[32m%s\x1b[0m', 'online');
 });
 
+// Server index config
+
+//var serverIndex = require('serve-index');
+//app.use(express.static(__dirname + '/'));
+//app.use('/uploads', serverIndex(__dirname + '/uploads'));
 
 // Rutas
-app.use('/usuario', usuarioRoutes);
+app.use('/usuarios', usuarioRoutes);
 app.use('/login', loginRoutes);
+app.use('/devices', deviceRoutes);
+app.use('/corps', corpRoutes);
+app.use('/search', searchRoutes);
+app.use('/upload', uploadRoutes);
+app.use('/img', imgRoutes);
 app.use('/', appRoutes);
 
 
